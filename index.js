@@ -27,35 +27,26 @@ module.exports = class {
   eval_script(script) {
     const
       $ = cheerio.load('<div id="hero"></div><div id="download"></div><div class="contents"></div>'),
-      obj = {
+      args = {
         $,
         document: {
-          getElementById: Function('return {}')
+          getElementById: a => ({})
         },
-        fetch: async function() {
-          return {
-            json: async function() {
-              return {
-                thumbnail_url: ''
-              }
-            }
-          }
-        },
-        gtag: Function(),
+        fetch: async a => ({
+          json: async a => ({
+            thumbnail_url: ''
+          })
+        }),
+        gtag: a => 0,
         Math: {
-          round() {
-            return 0;
-          }
+          round: a => 0
         },
         window: {
           location: {
             hostname: 'snaptik.app'
           }
         },
-        XMLHttpRequest: class {
-          open() {}
-          send() {}
-        }
+        XMLHttpRequest: Function('this.open = this.send = a => 0')
       };
 
     $.prototype.style = {};
@@ -68,7 +59,7 @@ module.exports = class {
       }
     });
 
-    Function(...Object.keys(obj), script)(...Object.values(obj));
+    Function(...Object.keys(args), script)(...Object.values(args));
 
     return $('#download')
       .html();
@@ -112,7 +103,7 @@ module.exports = class {
     const
       token = await this.get_token(),
       form = new FormData();
-    
+
     this.token = token;
 
     form.append('token', token);
