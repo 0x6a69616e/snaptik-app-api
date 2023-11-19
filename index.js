@@ -16,42 +16,41 @@ module.exports = class {
       .val();
   }
 
-  async eval_script(script) {
+  eval_script(script) {
     const
-        $ = cheerio.load('<div id="hero"></div><div id="download"></div><div class="contents"></div>'),
-        obj = {
-          $,
-          document: {
-            getElementById: function() {
-              return {}
-            }
-          },
-          fetch: async function() {
-            return {
-              json: async function() {
-                return {
-                  thumbnail_url: ''
-                }
+      $ = cheerio.load('<div id="hero"></div><div id="download"></div><div class="contents"></div>'),
+      obj = {
+        $,
+        document: {
+          getElementById: Function('return {}')
+        },
+        fetch: async function() {
+          return {
+            json: async function() {
+              return {
+                thumbnail_url: ''
               }
             }
-          },
-          gtag: function() {},
-          Math: {
-            round() {
-              return 0;
-            }
-          },
-          window: {
-            location: {
-              hostname: 'snaptik.app'
-            }
-          },
-          XMLHttpRequest: class {
-            open() {}
-            send() {}
           }
-        };
-    
+        },
+        gtag: Function(),
+        Math: {
+          round() {
+            return 0;
+          }
+        },
+        window: {
+          location: {
+            hostname: 'snaptik.app'
+          }
+        },
+        XMLHttpRequest: class {
+          open() {}
+          send() {}
+        }
+      };
+
+    $.prototype.style = {};
     Object.defineProperty($.prototype, 'innerHTML', {
       get: function() {
         return this.html();
@@ -60,12 +59,43 @@ module.exports = class {
         this.html(value);
       }
     });
-    $.prototype.style = {};
-    
+
     Function(...Object.keys(obj), script)(...Object.values(obj));
 
     return $('#download')
       .html();
+  }
+
+  eval_html(html) {
+    const
+      $ = cheerio.load(html);
+
+    return [
+      $('div.video-links > button[data-tokenhd]').data('tokenhd'),
+      $('div.video-links > a:not(a[href="/"])').toArray().map(elem => $(elem).attr('href')).map(x => x.startsWith('/') ? 'https://snaptik.app' + x : x)
+    ]
+  }
+
+  async get_oembed(token) {
+    const {
+      id
+    } = JSON.parse(atob(token.split('.')[1])), {
+      data
+    } = await this.axios.get('https://www.tiktok.com/oembed?url=https://www.tiktok.com/@tiktok/video/' + id);
+
+    return data;
+  }
+
+  async get_hd_video(token) {
+    const {
+      data: {
+        error,
+        url
+      }
+    } = await this.axios.get('https://snaptik.app/getHdLink.php?token=' + token);
+
+    if (error) throw new Error(error);
+    return url;
   }
 
   async process(url) {
@@ -82,9 +112,24 @@ module.exports = class {
         url: 'https://snaptik.app/abc2.php',
         method: 'POST',
         data: form
-      }), [globals, fn] = data.match(/(.*)eval\((function.*)\)/)
-      .slice(1), script = Function(`${globals}return (${fn})`)();
+      }),
+      [
+        globals,
+        fn
+      ] = data.match(/(.*)eval\((function.*)\)/).slice(1),
+      script = Function(`${globals}return (${fn})`)(),
+      html = this.eval_script(script),
+      [
+        _token,
+        srcs
+      ] = this.eval_html(html);
 
-    return await this.eval_script(script);
+    return {
+      tt_oembed: await this.get_oembed(_token),
+      video_src: [
+        await this.get_hd_video(_token),
+        ...srcs
+      ]
+    }
   }
 }
