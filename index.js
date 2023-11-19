@@ -4,14 +4,22 @@ const
   FormData = require('form-data');
 
 module.exports = class {
-  constructor(config) {
-    this.axios = axios.create(config);
+  constructor(config = {}) {
+    function randomInt(min, max) {
+      return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+    this.axios = axios.create(Object.assign(config, {
+      baseURL: 'https://snaptik.app',
+      headers: {
+        'User-Agent': `Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.${randomInt(0, 9999)}.${randomInt(0, 99)} Safari/537.36`
+      }
+    }));
   }
 
   async get_token() {
     const {
       data
-    } = await this.axios.get('https://snaptik.app');
+    } = await this.axios.get('/');
     return cheerio.load(data)('input[name="token"]')
       .val();
   }
@@ -81,7 +89,9 @@ module.exports = class {
       id
     } = JSON.parse(atob(token.split('.')[1])), {
       data
-    } = await this.axios.get('https://www.tiktok.com/oembed?url=https://www.tiktok.com/@tiktok/video/' + id);
+    } = await this.axios.get('/oembed?url=https://www.tiktok.com/@tiktok/video/' + id, {
+      baseURL: 'https://www.tiktok.com'
+    });
 
     return data;
   }
@@ -92,7 +102,7 @@ module.exports = class {
         error,
         url
       }
-    } = await this.axios.get('https://snaptik.app/getHdLink.php?token=' + token);
+    } = await this.axios.get('/getHdLink.php?token=' + token);
 
     if (error) throw new Error(error);
     return url;
@@ -102,17 +112,15 @@ module.exports = class {
     const
       token = await this.get_token(),
       form = new FormData();
+    
+    this.token = token;
 
     form.append('token', token);
     form.append('url', url);
 
     const {
       data
-    } = await this.axios({
-        url: 'https://snaptik.app/abc2.php',
-        method: 'POST',
-        data: form
-      }),
+    } = await this.axios.post('/abc2.php', form),
       [
         globals,
         fn
@@ -125,8 +133,8 @@ module.exports = class {
       ] = this.eval_html(html);
 
     return {
-      tt_oembed: await this.get_oembed(_token),
-      video_src: [
+      get_oembed: async () => await this.get_oembed(_token),
+      get_srcs: async () => [
         await this.get_hd_video(_token),
         ...srcs
       ]
