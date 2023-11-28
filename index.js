@@ -27,27 +27,7 @@ module.exports = class {
   eval_script(script) {
     const
       $ = cheerio.load('<div id="hero"></div><div id="download"></div><div class="contents"></div>'),
-      args = {
-        $,
-        document: {
-          getElementById: a => ({})
-        },
-        fetch: async a => ({
-          json: async a => ({
-            thumbnail_url: ''
-          })
-        }),
-        gtag: a => 0,
-        Math: {
-          round: a => 0
-        },
-        window: {
-          location: {
-            hostname: 'snaptik.app'
-          }
-        },
-        XMLHttpRequest: Function('this.open = this.send = a => 0')
-      };
+      args = Function('$', `return{$,document:{getElementById:a=>({})},fetch:asynca=>({json:asynca=>({thumbnail_url:''})}),gtag:a=>0,Math:{round:a=>0},window:{location:{hostname:'snaptik.app'}},XMLHttpRequest:Function('this.open=this.send=a=>0')}`)($);
 
     $.prototype.style = {};
     Object.defineProperty($.prototype, 'innerHTML', {
