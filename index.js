@@ -31,12 +31,8 @@ module.exports = class {
 
     $.prototype.style = {};
     Object.defineProperty($.prototype, 'innerHTML', {
-      get: function () {
-        return this.html();
-      },
-      set: function (value) {
-        this.html(value);
-      }
+      get: Function('return this.html()'),
+      set: Function('a', 'this.html(a)')
     });
 
     Function(...Object.keys(args), script)(...Object.values(args));
