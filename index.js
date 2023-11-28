@@ -51,10 +51,10 @@ module.exports = class {
 
     $.prototype.style = {};
     Object.defineProperty($.prototype, 'innerHTML', {
-      get: function() {
+      get: function () {
         return this.html();
       },
-      set: function(value) {
+      set: function (value) {
         this.html(value);
       }
     });
@@ -75,10 +75,8 @@ module.exports = class {
     ]
   }
 
-  async get_oembed(token) {
+  async get_oembed(id) {
     const {
-      id
-    } = JSON.parse(atob(token.split('.')[1])), {
       data
     } = await this.axios.get('/oembed?url=https://www.tiktok.com/@tiktok/video/' + id, {
       baseURL: 'https://www.tiktok.com'
@@ -121,14 +119,17 @@ module.exports = class {
       [
         _token,
         srcs
-      ] = this.eval_html(html);
+      ] = this.eval_html(html), {
+        id
+      } = JSON.parse(atob(_token.split('.')[1]));
 
     return {
-      get_oembed: async () => await this.get_oembed(_token),
+      get_oembed: async () => await this.get_oembed(id),
       get_srcs: async () => [
         await this.get_hd_video(_token),
         ...srcs
-      ]
+      ],
+      video_id: id
     }
   }
 }
