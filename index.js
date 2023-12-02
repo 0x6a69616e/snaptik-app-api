@@ -41,7 +41,7 @@ module.exports = class {
       .html();
   }
 
-  eval_html(html) {
+  parse_html(html) {
     const
       $ = cheerio.load(html);
 
@@ -49,16 +49,6 @@ module.exports = class {
       $('div.video-links > button[data-tokenhd]').data('tokenhd'),
       $('div.video-links > a:not(a[href="/"])').toArray().map(elem => $(elem).attr('href')).map(x => x.startsWith('/') ? 'https://snaptik.app' + x : x)
     ]
-  }
-
-  async get_oembed(id) {
-    const {
-      data
-    } = await this.axios.get('/oembed?url=https://www.tiktok.com/@tiktok/video/' + id, {
-      baseURL: 'https://www.tiktok.com'
-    });
-
-    return data;
   }
 
   async get_hd_video(token) {
@@ -71,6 +61,31 @@ module.exports = class {
 
     if (error) throw new Error(error);
     return url;
+  }
+
+  parse_oembed_html(html) {
+    const $ = cheerio.load(html);
+
+    return {
+      title: $('p').contents().filter(Function('return this.nodeType === 3')).text().trim(),
+      tags: $('p > a').toArray().map(elem => [$(elem).attr('title'), $(elem).attr('href')]),
+      music_name: $('section > a:last-child').attr('title'),
+      music_url: $('section > a:last-child').attr('href'),
+      video_url: $('blockquote').attr('cite'),
+      video_id: $('blockquote').data('video-id')
+    }
+  }
+
+  async get_oembed(id) {
+    const {
+      data
+    } = await this.axios.get('/oembed?url=https://www.tiktok.com/@tiktok/video/' + id, {
+      baseURL: 'https://www.tiktok.com'
+    });
+
+    data._parsed_html = this.parse_oembed_html(data.html);
+
+    return data;
   }
 
   async process(url) {
@@ -95,16 +110,16 @@ module.exports = class {
       [
         _token,
         srcs
-      ] = this.eval_html(html), {
+      ] = this.parse_html(html), {
         id
       } = JSON.parse(atob(_token.split('.')[1]));
 
     return {
-      get_oembed: async () => await this.get_oembed(id),
-      get_srcs: async () => [
-        await this.get_hd_video(_token),
+      sources: [
+        async () => await this.get_hd_video(_token),
         ...srcs
       ],
+      get_oembed: async () => await this.get_oembed(id),
       video_id: id
     }
   }
