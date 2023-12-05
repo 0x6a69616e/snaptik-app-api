@@ -8,12 +8,14 @@ module.exports = class {
     function randomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
-    this.axios = axios.create(Object.assign(config, {
+
+    const cfg = this.config = Object.assign(config, {
       baseURL: 'https://snaptik.app',
       headers: {
         'User-Agent': `Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.${randomInt(0, 9999)}.${randomInt(0, 99)} Safari/537.36`
       }
-    }));
+    });
+    this.axios = axios.create(cfg);
   }
 
   async get_token() {
@@ -64,13 +66,15 @@ module.exports = class {
   }
 
   parse_oembed_html(html) {
-    const $ = cheerio.load(html);
+    const
+      $ = cheerio.load(html),
+      music = $('section > a:last-child');
 
     return {
       title: $('p').contents().filter(Function('return this.nodeType === 3')).text().trim(),
       tags: $('p > a').toArray().map(elem => [$(elem).attr('title'), $(elem).attr('href')]),
-      music_name: $('section > a:last-child').attr('title'),
-      music_url: $('section > a:last-child').attr('href'),
+      music_name: music.attr('title'),
+      music_url: music.attr('href'),
       video_url: $('blockquote').attr('cite'),
       video_id: $('blockquote').data('video-id')
     }
