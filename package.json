@@ -1,0 +1,28 @@
+{
+  "name": "snaptik-app",
+  "version": "1.0.0",
+  "author": "0x6a69616e",
+  "description": "A reverse-engineered API wrapper for SnapTik (snaptik.app) written in Node.js.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "node",
+    "nodejs",
+    "tiktok",
+    "downloader",
+    "snaptik",
+    "chatgpt"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/0x6a69616e/snaptik-app.git"
+  },
+  "dependencies": {
+    "axios": "^1.6.2",
+    "cheerio": "^1.0.0-rc.12",
+    "form-data": "^4.0.0"
+  }
+}
