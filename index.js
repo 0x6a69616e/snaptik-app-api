@@ -9,12 +9,12 @@ module.exports = class {
       return Math.floor(Math.random() * (max - min + 1)) + min;
     }
 
-    this.axios = axios.create(this.config = Object.assign(config, {
+    this.axios = axios.create(this.config = Object.assign({
       baseURL: 'https://snaptik.app',
       headers: {
         'User-Agent': `Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/107.0.${randomInt(0, 9999)}.${randomInt(0, 99)} Safari/537.36`
       }
-    }));
+    }, config));
   }
 
   async get_token() {
