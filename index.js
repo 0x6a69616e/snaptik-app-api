@@ -101,6 +101,10 @@ module.exports = class {
     form.append('token', token);
     form.append('url', url);
 
+    function atob(data) {
+      return Buffer.from(data, 'base64').toString('binary');
+    }
+
     const {
       data
     } = await this.axios.post('/abc2.php', form),
