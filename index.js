@@ -3,7 +3,7 @@ const
   cheerio = require('cheerio'),
   FormData = require('form-data');
 
-module.exports = class {
+module.exports = {
   constructor(config = {}) {
     function randomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -21,14 +21,13 @@ module.exports = class {
     const {
       data
     } = await this.axios.get('/');
-    return cheerio.load(data)('input[name="token"]')
-      .val();
+    return cheerio.load(data)('input[name="token"]').val();
   }
 
   eval_script(script) {
     const
       $ = cheerio.load('<div id="hero"></div><div id="download"></div><div class="contents"></div>'),
-      args = Function('$', `return{$,document:{getElementById:a=>({})},fetch:asynca=>({json:asynca=>({thumbnail_url:''})}),gtag:a=>0,Math:{round:a=>0},window:{location:{hostname:'snaptik.app'}},XMLHttpRequest:Function('this.open=this.send=a=>0')}`)($);
+      args = Function('$', `return{$,document:{getElementById:a=>({src:''})},gtag:a=>0,Math:{round:a=>0},window:{location:{hostname:'snaptik.app'}},XMLHttpRequest:Function('this.open=this.send=a=>0')}`)($);
 
     $.prototype.style = {};
     Object.defineProperty($.prototype, 'innerHTML', {
@@ -36,10 +35,12 @@ module.exports = class {
       set: Function('a', 'this.html(a)')
     });
 
-    Function(...Object.keys(args), script)(...Object.values(args));
+    const video_url = Function(...Object.keys(args), `let fetch=a=>{fetch=a;return{json:a=>({thumbnail_url:''})}};${script};return fetch;`)(...Object.values(args));
 
-    return $('#download')
-      .html();
+    return [
+      $('#download').html(),
+      video_url
+    ]
   }
 
   parse_html(html) {
@@ -67,28 +68,17 @@ module.exports = class {
   parse_oembed_html(html) {
     const
       $ = cheerio.load(html),
-      music = $('section > a:last-child');
+      music = $('section > a:last-child'),
+      video = $('blockquote');
 
     return {
       title: $('p').contents().filter(Function('return this.nodeType === 3')).text().trim(),
       tags: $('p > a').toArray().map(elem => [$(elem).attr('title'), $(elem).attr('href')]),
       music_name: music.attr('title'),
       music_url: music.attr('href'),
-      video_url: $('blockquote').attr('cite'),
-      video_id: $('blockquote').data('video-id')
+      video_url: video.attr('cite'),
+      video_id: video.data('video-id')
     }
-  }
-
-  async get_oembed(id) {
-    const {
-      data
-    } = await this.axios.get('/oembed?url=https://www.tiktok.com/@tiktok/video/' + id, {
-      baseURL: 'https://www.tiktok.com'
-    });
-
-    data._parsed_html = this.parse_oembed_html(data.html);
-
-    return data;
   }
 
   async process(url) {
@@ -113,7 +103,10 @@ module.exports = class {
         fn
       ] = data.match(/(.*)eval\((function.*)\)/).slice(1),
       script = Function(`${globals}return (${fn})`)(),
-      html = this.eval_script(script),
+      [
+        html,
+        oembed_url
+      ] = this.eval_script(script),
       [
         _token,
         srcs
@@ -126,7 +119,18 @@ module.exports = class {
         async () => await this.get_hd_video(_token),
         ...srcs
       ],
-      get_oembed: async () => await this.get_oembed(id),
+      oembed: {
+        url: oembed_url,
+        get_data: async () => {
+          const {
+            data
+          } = await this.axios.get('/oembed?url=https://www.tiktok.com/@tiktok/video/' + id, {
+            baseURL: 'https://www.tiktok.com'
+          });
+          data['_html'] = this.parse_oembed_html(data.html);
+          return data
+        }
+      },
       video_id: id
     }
   }
