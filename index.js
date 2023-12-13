@@ -3,7 +3,7 @@ const
   cheerio = require('cheerio'),
   FormData = require('form-data');
 
-module.exports = {
+module.exports = class {
   constructor(config = {}) {
     function randomInt(min, max) {
       return Math.floor(Math.random() * (max - min + 1)) + min;
