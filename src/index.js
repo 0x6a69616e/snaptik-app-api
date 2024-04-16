@@ -2,11 +2,12 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const FormData = require('form-data');
 
-function build_dlable_resource(url) {
+function build_downloadable_resource(url) {
   const parsed = new URL(url);
   return parsed.download = function download() {
     return axios({
       url,
+      type: 'stream',
       ...config
     });
   }, parsed;
