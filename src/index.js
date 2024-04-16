@@ -4,7 +4,7 @@ const FormData = require('form-data');
 
 function build_downloadable_resource(url) {
   const parsed = new URL(url);
-  return parsed.download = function download() {
+  return parsed.download = function (config) {
     return axios({
       url,
       type: 'stream',
