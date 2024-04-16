@@ -2,6 +2,16 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const FormData = require('form-data');
 
+function build_dlable_resource(url) {
+  const parsed = new URL(url);
+  return parsed.download = function download() {
+    return axios({
+      url,
+      ...config
+    });
+  }, parsed;
+}
+
 class SnapTikClient {
   constructor(config = {}) {
     this.axios = axios.create(this.config = {
@@ -91,6 +101,7 @@ class SnapTikClient {
           }
         }
       }));
+
       Function(...k, script2)(...v);
     });
   }
@@ -113,41 +124,41 @@ class SnapTikClient {
     const $ = cheerio.load(html);
     const is_video = !$('div.render-wrapper').length;
 
-    return is_video ? (async () => {
+    return is_video ? await (async () => {
       const hd_token = $('div.video-links > button[data-tokenhd]').data('tokenhd');
       const hd_url = new URL(await this.get_hd_video(hd_token));
       const token = hd_url.searchParams.get('token');
-      const raw_hd_url = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))).url;
+      const {
+        url
+      } = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
 
       return {
         type: 'video',
         data: {
           sources: [
-            raw_hd_url,
+            url,
             hd_url.href,
-            ...$('div.video-links > a:not(a[href="/"])')
-            .toArray()
-            .map(elem => $(elem).attr('href'))
-            .map(x => x.startsWith('/') ? this.config.baseURL + x : x)
-          ]
+            ...$('div.video-links > a:not(a[href="/"])').toArray()
+              .map(elem => $(elem).attr('href'))
+              .map(x => x.startsWith('/') ? this.config.baseURL + x : x)
+          ].map(build_downloadable_resource)
         }
-      }
+      };
     })() : {
       type: 'slideshow',
       data: {
         photos: $('div.columns > div.column > div.photo').toArray().map(elem => ({
           sources: [
-            $(elem).find('img').attr('src'),
-            $(elem).find('a').attr('href')
-          ]
+            $(elem).find('img[alt="Photo"]').attr('src'),
+            $(elem).find('a[data-event="download_albumPhoto_photo"]').attr('href')
+          ].map(build_downloadable_resource)
         }))
       }
-    }
+    };
   }
 
   async process(url) {
     const script = await this.get_script(url);
-
     const {
       html,
       oembed_url
@@ -156,8 +167,7 @@ class SnapTikClient {
     return {
       ...(await this.parse_html(html)),
       url,
-      oembed_url,
-      script
+      oembed_url
     };
   }
 }
