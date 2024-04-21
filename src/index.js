@@ -2,15 +2,19 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const FormData = require('form-data');
 
-function build_downloadable_resource(url) {
-  const parsed = new URL(url);
-  return parsed.download = function (config) {
+class Resource {
+  constructor(url, index) {
+    this.index = index;
+    this.url = url;
+  }
+
+  download(config = {}) {
     return axios({
-      url,
+      url: this.url,
       type: 'stream',
       ...config
     });
-  }, parsed;
+  }
 }
 
 class SnapTikClient {
@@ -140,22 +144,28 @@ class SnapTikClient {
             url,
             hd_url.href,
             ...$('div.video-links > a:not(a[href="/"])').toArray()
-              .map(elem => $(elem).attr('href'))
-              .map(x => x.startsWith('/') ? this.config.baseURL + x : x)
-          ].map(build_downloadable_resource)
+            .map(elem => $(elem).attr('href'))
+            .map(x => x.startsWith('/') ? this.config.baseURL + x : x)
+          ].map((...x) => new Resource(...x))
         }
       };
-    })() : {
+    })() : (x => x.data.photos.length == 1 ? ({
+      ...x,
+      type: 'photo',
+      data: {
+        sources: x.data.photos[0].sources
+      }
+    }) : x)({
       type: 'slideshow',
       data: {
         photos: $('div.columns > div.column > div.photo').toArray().map(elem => ({
           sources: [
             $(elem).find('img[alt="Photo"]').attr('src'),
             $(elem).find('a[data-event="download_albumPhoto_photo"]').attr('href')
-          ].map(build_downloadable_resource)
+          ].map((...x) => new Resource(...x))
         }))
       }
-    };
+    });
   }
 
   async process(url) {
@@ -165,11 +175,12 @@ class SnapTikClient {
       oembed_url
     } = await this.eval_script(script);
 
-    return {
+    const res = {
       ...(await this.parse_html(html)),
-      url,
-      oembed_url
+      url
     };
+
+    return res.data.oembed_url = oembed_url, res;
   }
 }
 
