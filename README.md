@@ -1,2 +1,2 @@
-# snaptik-app
-Reverse-engineered Node API wrapper for SnapTik (snaptik.app)
+# snaptik-app-api
+> A no-watermark TikTok video downloader based on reverse-engineering SnapTik (snaptik.app)

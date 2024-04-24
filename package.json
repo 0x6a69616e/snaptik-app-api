@@ -1,5 +1,5 @@
 {
-  "name": "snaptik-app",
+  "name": "snaptik-app-api",
   "version": "1.0.0",
   "author": "0x6a69616e",
   "description": "A reverse-engineered API wrapper for SnapTik (snaptik.app) written in Node.js.",
